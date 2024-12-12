@@ -37,12 +37,6 @@ from .radial import (
     SoftTransform,
 )
 
-import logging
-
-# Imports for fast tensor product
-from build.kernel_wrapper import *
-from src.implementations.LoopUnrollTP import *
-from src.torch_modules.irrep_transposer import *
 
 @compile_mode("script")
 class LinearNodeEmbeddingBlock(torch.nn.Module):
@@ -51,6 +45,7 @@ class LinearNodeEmbeddingBlock(torch.nn.Module):
         irreps_in: o3.Irreps,
         irreps_out: o3.Irreps,
         cueq_config: Optional[CuEquivarianceConfig] = None,
+        fast_tp_config: Optional[dict] = None,
     ):
         super().__init__()
         self.linear = Linear(
@@ -71,6 +66,7 @@ class LinearReadoutBlock(torch.nn.Module):
         irreps_in: o3.Irreps,
         irrep_out: o3.Irreps = o3.Irreps("0e"),
         cueq_config: Optional[CuEquivarianceConfig] = None,
+        fast_tp_config: Optional[dict] = None,
     ):
         super().__init__()
         self.linear = Linear(
@@ -96,6 +92,7 @@ class NonLinearReadoutBlock(torch.nn.Module):
         irrep_out: o3.Irreps = o3.Irreps("0e"),
         num_heads: int = 1,
         cueq_config: Optional[CuEquivarianceConfig] = None,
+        fast_tp_config: Optional[dict] = None,
     ):
         super().__init__()
         self.hidden_irreps = MLP_irreps
@@ -125,6 +122,7 @@ class LinearDipoleReadoutBlock(torch.nn.Module):
         irreps_in: o3.Irreps,
         dipole_only: bool = False,
         cueq_config: Optional[CuEquivarianceConfig] = None,
+        fast_tp_config: Optional[dict] = None,
     ):
         super().__init__()
         if dipole_only:
@@ -148,6 +146,7 @@ class NonLinearDipoleReadoutBlock(torch.nn.Module):
         gate: Callable,
         dipole_only: bool = False,
         cueq_config: Optional[CuEquivarianceConfig] = None,
+        fast_tp_config: Optional[dict] = None,
     ):
         super().__init__()
         self.hidden_irreps = MLP_irreps
@@ -262,6 +261,7 @@ class EquivariantProductBasisBlock(torch.nn.Module):
         use_sc: bool = True,
         num_elements: Optional[int] = None,
         cueq_config: Optional[CuEquivarianceConfig] = None,
+        fast_tp_config: Optional[dict] = None,
     ) -> None:
         super().__init__()
 
@@ -307,6 +307,7 @@ class InteractionBlock(torch.nn.Module):
         avg_num_neighbors: float,
         radial_MLP: Optional[List[int]] = None,
         cueq_config: Optional[CuEquivarianceConfig] = None,
+        fast_tp_config: Optional[dict] = None,
     ) -> None:
         super().__init__()
         self.node_attrs_irreps = node_attrs_irreps
@@ -320,6 +321,7 @@ class InteractionBlock(torch.nn.Module):
             radial_MLP = [64, 64, 64]
         self.radial_MLP = radial_MLP
         self.cueq_config = cueq_config
+        self.fast_tp_config = fast_tp_config
 
         self._setup()
 
@@ -376,6 +378,9 @@ class ResidualElementDependentInteractionBlock(InteractionBlock):
         if not hasattr(self, "cueq_config"):
             self.cueq_config = None
 
+        if not hasattr(self, "fast_tp_config"):
+            self.fast_tp_config = None
+
         # First linear
         self.linear_up = Linear(
             self.node_feats_irreps,
@@ -396,6 +401,7 @@ class ResidualElementDependentInteractionBlock(InteractionBlock):
             shared_weights=False,
             internal_weights=False,
             cueq_config=self.cueq_config,
+            fast_tp_config=self.fast_tp_config
         )
         self.conv_tp_weights = TensorProductWeightsBlock(
             num_elements=self.node_attrs_irreps.num_irreps,
@@ -452,6 +458,10 @@ class AgnosticNonlinearInteractionBlock(InteractionBlock):
     def _setup(self) -> None:
         if not hasattr(self, "cueq_config"):
             self.cueq_config = None
+
+        if not hasattr(self, "fast_tp_config"):
+            self.fast_tp_config = None
+        
         self.linear_up = Linear(
             self.node_feats_irreps,
             self.node_feats_irreps,
@@ -471,6 +481,7 @@ class AgnosticNonlinearInteractionBlock(InteractionBlock):
             shared_weights=False,
             internal_weights=False,
             cueq_config=self.cueq_config,
+            fast_tp_config=self.fast_tp_config
         )
 
         # Convolution weights
@@ -529,6 +540,10 @@ class AgnosticResidualNonlinearInteractionBlock(InteractionBlock):
     def _setup(self) -> None:
         if not hasattr(self, "cueq_config"):
             self.cueq_config = None
+
+        if not hasattr(self, "cueq_config"):
+            self.fast_tp_config = None
+
         # First linear
         self.linear_up = Linear(
             self.node_feats_irreps,
@@ -549,6 +564,7 @@ class AgnosticResidualNonlinearInteractionBlock(InteractionBlock):
             shared_weights=False,
             internal_weights=False,
             cueq_config=self.cueq_config,
+            fast_tp_config=self.fast_tp_config
         )
 
         # Convolution weights
@@ -602,38 +618,15 @@ class AgnosticResidualNonlinearInteractionBlock(InteractionBlock):
         message = message + sc
         return message  # [n_nodes, irreps]
 
-class FastSampler(object):
-    def __init__(self, L1_irreps, L2_irreps, max_L):
-        self.L1_irreps = L1_irreps
-        self.L2_irreps = L2_irreps
-        self.max_L = max_L
-
-        self.reps = RepTriple(Representation(str(L1_irreps)),
-                Representation(str(L2_irreps)), max_L)
-    
-        self.L1T = IrrepTransposer(self.reps.L1)
-        self.L3T = IrrepTransposer(self.reps.L3)
-        self.fast_tp = LoopUnrollTP(self.reps, torch_op=True)
-
-    def __getstate__(self):
-        return (self.L1_irreps, self.L2_irreps, self.max_L)
-
-    def __setstate__(self, state):
-        self.L1_irreps, self.L2_irreps, self.max_L = state
-        self.reps = RepTriple(Representation(str(self.L1_irreps)),
-                Representation(str(self.L2_irreps)), self.max_L)
-        self.L1T = IrrepTransposer(self.reps.L1)
-        self.L3T = IrrepTransposer(self.reps.L3)
-        self.fast_tp = LoopUnrollTP(self.reps, torch_op=True)
 
 @compile_mode("script")
 class RealAgnosticInteractionBlock(InteractionBlock):
-    '''
-    Modified to support fast tensor product implementation.
-    '''
     def _setup(self) -> None:
         if not hasattr(self, "cueq_config"):
             self.cueq_config = None
+
+        if not hasattr(self, "fast_tp_config"):
+            self.fast_tp_config = None
         # First linear
         self.linear_up = Linear(
             self.node_feats_irreps,
@@ -656,9 +649,8 @@ class RealAgnosticInteractionBlock(InteractionBlock):
             shared_weights=False,
             internal_weights=False,
             cueq_config=self.cueq_config,
+            fast_tp_config=self.fast_tp_config
         )
-
-        self.fast_tp = FastSampler(self.node_feats_irreps, self.edge_attrs_irreps, 3)
 
         # Convolution weights
         input_dim = self.edge_feats_irreps.num_irreps
@@ -694,46 +686,34 @@ class RealAgnosticInteractionBlock(InteractionBlock):
         edge_feats: torch.Tensor,
         edge_index: torch.Tensor,
     ) -> Tuple[torch.Tensor, None]:
-
-        L1T = self.fast_tp.L1T 
-        L3T = self.fast_tp.L3T 
-        fast_tp = self.fast_tp.fast_tp 
-
         sender = edge_index[0]
         receiver = edge_index[1]
         num_nodes = node_feats.shape[0]
         node_feats = self.linear_up(node_feats)
         tp_weights = self.conv_tp_weights(edge_feats)
-
-        mji_ours = fast_tp.forward( # 
-            L1T(node_feats.float(), True)[sender], edge_attrs.float(), tp_weights.float()
+        mji = self.conv_tp(
+            node_feats[sender], edge_attrs, tp_weights
         )  # [n_edges, irreps]
-        message_ours = scatter_sum(
-            src=mji_ours, index=receiver, dim=0, dim_size=num_nodes
+        message = scatter_sum(
+            src=mji, index=receiver, dim=0, dim_size=num_nodes
         )  # [n_nodes, irreps]
-        message_ours = L3T(message_ours, False).double()
-
-        #mji = self.conv_tp( # 
-        #    node_feats[sender], edge_attrs, tp_weights
-        #)  # [n_edges, irreps]
-        #message = scatter_sum(
-        #    src=mji, index=receiver, dim=0, dim_size=num_nodes
-        #)  # [n_nodes, irreps]
-        #print(f"Difference norm is {torch.norm(message - message_ours)}")
-
-        message = self.linear(message_ours) / self.avg_num_neighbors
+        message = self.linear(message) / self.avg_num_neighbors
         message = self.skip_tp(message, node_attrs)
         return (
             self.reshape(message),
             None,
         )  # [n_nodes, channels, (lmax + 1)**2]
 
-
+# Main MACE Block
 @compile_mode("script")
 class RealAgnosticResidualInteractionBlock(InteractionBlock):
     def _setup(self) -> None:
         if not hasattr(self, "cueq_config"):
             self.cueq_config = None
+
+        if not hasattr(self, "fast_tp_config"):
+            self.fast_tp_config = None
+
         # First linear
         self.linear_up = Linear(
             self.node_feats_irreps,
@@ -756,6 +736,7 @@ class RealAgnosticResidualInteractionBlock(InteractionBlock):
             shared_weights=False,
             internal_weights=False,
             cueq_config=self.cueq_config,
+            fast_tp_config=self.fast_tp_config
         )
 
         # Convolution weights
@@ -816,6 +797,10 @@ class RealAgnosticDensityInteractionBlock(InteractionBlock):
     def _setup(self) -> None:
         if not hasattr(self, "cueq_config"):
             self.cueq_config = None
+
+        if not hasattr(self, "fast_tp_config"):
+            self.fast_tp_config = None
+
         # First linear
         self.linear_up = Linear(
             self.node_feats_irreps,
@@ -838,6 +823,7 @@ class RealAgnosticDensityInteractionBlock(InteractionBlock):
             shared_weights=False,
             internal_weights=False,
             cueq_config=self.cueq_config,
+            fast_tp_config=self.fast_tp_config
         )
 
         # Convolution weights
@@ -913,6 +899,9 @@ class RealAgnosticDensityResidualInteractionBlock(InteractionBlock):
         if not hasattr(self, "cueq_config"):
             self.cueq_config = None
 
+        if not hasattr(self, "fast_tp_config"):
+            self.fast_tp_config = None
+
         # First linear
         self.linear_up = Linear(
             self.node_feats_irreps,
@@ -935,6 +924,7 @@ class RealAgnosticDensityResidualInteractionBlock(InteractionBlock):
             shared_weights=False,
             internal_weights=False,
             cueq_config=self.cueq_config,
+            fast_tp_config=self.fast_tp_config
         )
 
         # Convolution weights
@@ -1010,6 +1000,9 @@ class RealAgnosticAttResidualInteractionBlock(InteractionBlock):
     def _setup(self) -> None:
         if not hasattr(self, "cueq_config"):
             self.cueq_config = None
+        if not hasattr(self, "fast_tp_config"):
+            self.fast_tp_config = None
+
         self.node_feats_down_irreps = o3.Irreps("64x0e")
         # First linear
         self.linear_up = Linear(
@@ -1033,6 +1026,7 @@ class RealAgnosticAttResidualInteractionBlock(InteractionBlock):
             shared_weights=False,
             internal_weights=False,
             cueq_config=self.cueq_config,
+            fast_tp_config=self.fast_tp_config
         )
 
         # Convolution weights

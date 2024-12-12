@@ -134,6 +134,7 @@ class TensorProduct:
         shared_weights: bool = False,
         internal_weights: bool = False,
         cueq_config: Optional[CuEquivarianceConfig] = None,
+        fast_tp_config: Optional[dict] = None,
     ):
         if (
             CUET_AVAILABLE
@@ -158,6 +159,9 @@ class TensorProduct:
 
             instance.forward = types.MethodType(cuet_forward, instance)
             return instance
+
+        elif fast_tp_config is not None and fast_tp_config["enabled"]:
+            raise NotImplementedError("Fast TP is not supported yet") 
 
         return o3.TensorProduct(
             irreps_in1,

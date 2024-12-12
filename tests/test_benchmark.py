@@ -1,3 +1,6 @@
+import sys
+sys.path.append('/global/cfs/projectdirs/m1982/vbharadw/equivariant_spmm/mace')
+
 import os
 from typing import Optional
 
@@ -11,6 +14,8 @@ from mace import data
 from mace.calculators.foundations_models import mace_mp
 from mace.tools import AtomicNumberTable, torch_geometric, torch_tools
 
+import warnings
+warnings.filterwarnings("ignore")
 
 def is_mace_full_bench():
     return os.environ.get("MACE_FULL_BENCH", "0") == "1"
@@ -20,7 +25,7 @@ def is_mace_full_bench():
 @pytest.mark.benchmark(warmup=True, warmup_iterations=4, min_rounds=8)
 @pytest.mark.parametrize("size", (3, 5, 7, 9))
 @pytest.mark.parametrize("dtype", ["float32", "float64"])
-@pytest.mark.parametrize("compile_mode", [None, "default"])
+@pytest.mark.parametrize("compile_mode", [None])
 def test_inference(
     benchmark, size: int, dtype: str, compile_mode: Optional[str], device: str = "cuda"
 ):
@@ -28,17 +33,17 @@ def test_inference(
         pytest.skip("Skipping long running benchmark, set MACE_FULL_BENCH=1 to execute")
 
     with torch_tools.default_dtype(dtype):
-        model = load_mace_mp_medium(dtype, compile_mode, device)
+        model = load_mace_mp_migrate_fast(dtype, compile_mode, device)
+        #model = load_mace_mp_medium(dtype, compile_mode, device)
         batch = create_batch(size, model, device)
-        log_bench_info(benchmark, dtype, compile_mode, batch)
+        #log_bench_info(benchmark, dtype, compile_mode, batch)
 
         def func():
             torch.cuda.synchronize()
-            model(batch, training=compile_mode is not None, compute_force=True)
+            print(model(batch, training=compile_mode is not None, compute_force=True))
 
         torch.cuda.empty_cache()
         benchmark(func)
-
 
 def load_mace_mp_medium(dtype, compile_mode, device):
     calc = mace_mp(
@@ -51,6 +56,29 @@ def load_mace_mp_medium(dtype, compile_mode, device):
     model = calc.models[0].to(device)
     return model
 
+def load_mace_mp_migrate_fast(dtype, compile_mode, device):
+    from mace.tools.scripts_utils import extract_config_mace_model
+    source_model = mace_mp(
+        model="medium",
+        default_dtype=dtype,
+        device=device,
+        compile_mode=compile_mode,
+        fullgraph=False).models[0]
+
+    config = extract_config_mace_model(source_model)
+    config["fast_tp_config"] = {"enabled": True}
+    target_model = source_model.__class__(**config).to(device)
+
+    source_dict = source_model.state_dict()
+    target_dict = target_model.state_dict()
+
+    # To migrate fast_tp, we should transfer all keys
+    for key in target_dict:
+        if key in source_dict:
+            target_dict[key] = source_dict[key]
+
+    target_model.load_state_dict(target_dict)
+    return target_model.to(device)
 
 def create_batch(size: int, model: torch.nn.Module, device: str) -> dict:
     cutoff = model.r_max.item()
@@ -109,6 +137,12 @@ def read_bench_results(files: list[str]) -> pd.DataFrame:
 if __name__ == "__main__":
     # Print to stdout a csv of the benchmark metrics
     import subprocess
+
+    def call(x):
+        x()
+
+    test_inference(call, 1, "float32", compile_mode=None) 
+    exit(1)
 
     result = subprocess.run(
         ["pytest-benchmark", "list"], capture_output=True, text=True
