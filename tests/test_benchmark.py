@@ -1,5 +1,6 @@
 import sys
-sys.path.append('/global/cfs/projectdirs/m1982/vbharadw/equivariant_spmm/mace')
+sys.path.append('/global/cfs/projectdirs/m1982/vbharadw/equivariant_spmm/mace_dev')
+sys.path.append('/global/cfs/projectdirs/m1982/vbharadw/equivariant_spmm')
 
 import os
 from typing import Optional
@@ -14,8 +15,8 @@ from mace import data
 from mace.calculators.foundations_models import mace_mp
 from mace.tools import AtomicNumberTable, torch_geometric, torch_tools
 
-import warnings
-warnings.filterwarnings("ignore")
+#import warnings
+#warnings.filterwarnings("ignore")
 
 def is_mace_full_bench():
     return os.environ.get("MACE_FULL_BENCH", "0") == "1"
@@ -25,7 +26,7 @@ def is_mace_full_bench():
 @pytest.mark.benchmark(warmup=True, warmup_iterations=4, min_rounds=8)
 @pytest.mark.parametrize("size", (3, 5, 7, 9))
 @pytest.mark.parametrize("dtype", ["float32", "float64"])
-@pytest.mark.parametrize("compile_mode", [None])
+@pytest.mark.parametrize("compile_mode", [None, "default"])
 def test_inference(
     benchmark, size: int, dtype: str, compile_mode: Optional[str], device: str = "cuda"
 ):
@@ -40,7 +41,7 @@ def test_inference(
 
         def func():
             torch.cuda.synchronize()
-            print(model(batch, training=compile_mode is not None, compute_force=True))
+            model(batch, training=compile_mode is not None, compute_force=True)
 
         torch.cuda.empty_cache()
         benchmark(func)
@@ -140,7 +141,6 @@ if __name__ == "__main__":
 
     def call(x):
         x()
-
     test_inference(call, 1, "float32", compile_mode=None) 
     exit(1)
 

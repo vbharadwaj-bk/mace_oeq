@@ -21,6 +21,10 @@ try:
 except ImportError:
     CUET_AVAILABLE = False
 
+from build.kernel_wrapper import *
+from src.implementations.LoopUnrollTP import *
+from src.implementations.e3nn_lite import * 
+
 if CUET_AVAILABLE:
 
     class O3_e3nn(cue.O3):
@@ -161,7 +165,12 @@ class TensorProduct:
             return instance
 
         elif fast_tp_config is not None and fast_tp_config["enabled"]:
-            raise NotImplementedError("Fast TP is not supported yet") 
+            tpp = TPProblem(Irreps(str(irreps_in1)), Irreps(str(irreps_in2)), Irreps(str(irreps_out)), 
+                instructions, shared_weights=shared_weights, internal_weights=internal_weights)
+            tp_impl = LoopUnrollTP(tpp, torch_op=True)
+            tp_impl.weight_numel = tpp.weight_numel
+            return tp_impl
+
 
         return o3.TensorProduct(
             irreps_in1,
