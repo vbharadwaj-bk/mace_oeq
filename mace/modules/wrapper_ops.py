@@ -153,6 +153,8 @@ class TensorProduct:
                 layout=cueq_config.layout,
                 shared_weights=shared_weights,
                 internal_weights=internal_weights,
+                dtype=torch.get_default_dtype(),
+                math_dtype=torch.get_default_dtype(),
             )
             instance.original_forward = instance.forward
 
@@ -164,9 +166,23 @@ class TensorProduct:
             instance.forward = types.MethodType(cuet_forward, instance)
             return instance
 
+
         elif fast_tp_config is not None and fast_tp_config["enabled"]:
+            irrep_dtype = None
+            weight_dtype = None
+            torch_dtype = torch.get_default_dtype()
+
+            if torch_dtype == torch.float32:
+                irrep_dtype = np.float32
+                weight_dtype = np.float32
+            elif torch_dtype == torch.float64:
+                irrep_dtype = np.float64
+                weight_dtype = np.float64 
+
             tpp = TPProblem(Irreps(str(irreps_in1)), Irreps(str(irreps_in2)), Irreps(str(irreps_out)), 
-                instructions, shared_weights=shared_weights, internal_weights=internal_weights)
+                instructions, shared_weights=shared_weights, internal_weights=internal_weights, 
+                irrep_dtype=irrep_dtype,
+                weight_dtype=weight_dtype)
             tp_impl = LoopUnrollTP(tpp, torch_op=True)
             tp_impl.weight_numel = tpp.weight_numel
             return tp_impl
