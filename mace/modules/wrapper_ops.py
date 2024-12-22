@@ -23,10 +23,10 @@ except ImportError:
 
 from build.kernel_wrapper import *
 from src.implementations.LoopUnrollTP import *
+from src.implementations.LoopUnrollConv import *
 from src.implementations.e3nn_lite import * 
 
 if CUET_AVAILABLE:
-
     class O3_e3nn(cue.O3):
         def __mul__(  # pylint: disable=no-self-argument
             rep1: "O3_e3nn", rep2: "O3_e3nn"
@@ -180,13 +180,18 @@ class TensorProduct:
                 weight_dtype = np.float64 
 
             tpp = TPProblem(Irreps(str(irreps_in1)), Irreps(str(irreps_in2)), Irreps(str(irreps_out)), 
-                instructions, shared_weights=shared_weights, internal_weights=internal_weights, 
+                instructions, shared_weights=shared_weights, internal_weights=internal_weights,
                 irrep_dtype=irrep_dtype,
                 weight_dtype=weight_dtype)
-            tp_impl = LoopUnrollTP(tpp, torch_op=True)
+
+            tp_impl = None
+            if fast_tp_config["conv_fusion"]:
+                tp_impl = LoopUnrollConv(tpp, torch_op=True)
+            else: 
+                tp_impl = LoopUnrollTP(tpp, torch_op=True)
+
             tp_impl.weight_numel = tpp.weight_numel
             return tp_impl
-
 
         return o3.TensorProduct(
             irreps_in1,

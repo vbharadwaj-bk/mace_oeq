@@ -443,12 +443,19 @@ class ResidualElementDependentInteractionBlock(InteractionBlock):
         sc = self.skip_tp(node_feats, node_attrs)
         node_feats = self.linear_up(node_feats)
         tp_weights = self.conv_tp_weights(node_attrs[sender], edge_feats)
-        mji = self.conv_tp(
-            node_feats[sender], edge_attrs, tp_weights
-        )  # [n_edges, irreps]
-        message = scatter_sum(
-            src=mji, index=receiver, dim=0, dim_size=num_nodes
-        )  # [n_nodes, irreps]
+
+        message = None
+        if self.fast_tp_config 
+                and self.fast_tp_config["enabled"]
+                and self.fast_tp_config["conv_fusion"]:
+            message = self.conv_tp(node_feats, edge_attrs, tp_weights, sender, receiver)
+        else:
+            mji = self.conv_tp(
+                node_feats[sender], edge_attrs, tp_weights
+            )  # [n_edges, irreps]
+            message = scatter_sum(
+                src=mji, index=receiver, dim=0, dim_size=num_nodes
+            )  # [n_nodes, irreps]
         message = self.linear(message) / self.avg_num_neighbors
         return message + sc  # [n_nodes, irreps]
 
@@ -524,12 +531,19 @@ class AgnosticNonlinearInteractionBlock(InteractionBlock):
         num_nodes = node_feats.shape[0]
         tp_weights = self.conv_tp_weights(edge_feats)
         node_feats = self.linear_up(node_feats)
-        mji = self.conv_tp(
-            node_feats[sender], edge_attrs, tp_weights
-        )  # [n_edges, irreps]
-        message = scatter_sum(
-            src=mji, index=receiver, dim=0, dim_size=num_nodes
-        )  # [n_nodes, irreps]
+
+        message = None
+        if self.fast_tp_config 
+                and self.fast_tp_config["enabled"]
+                and self.fast_tp_config["conv_fusion"]:
+            message = self.conv_tp(node_feats, edge_attrs, tp_weights, sender, receiver)
+        else:
+            mji = self.conv_tp(
+                node_feats[sender], edge_attrs, tp_weights
+            )  # [n_edges, irreps]
+            message = scatter_sum(
+                src=mji, index=receiver, dim=0, dim_size=num_nodes
+            )  # [n_nodes, irreps]
         message = self.linear(message) / self.avg_num_neighbors
         message = self.skip_tp(message, node_attrs)
         return message  # [n_nodes, irreps]
@@ -608,12 +622,19 @@ class AgnosticResidualNonlinearInteractionBlock(InteractionBlock):
         sc = self.skip_tp(node_feats, node_attrs)
         node_feats = self.linear_up(node_feats)
         tp_weights = self.conv_tp_weights(edge_feats)
-        mji = self.conv_tp(
-            node_feats[sender], edge_attrs, tp_weights
-        )  # [n_edges, irreps]
-        message = scatter_sum(
-            src=mji, index=receiver, dim=0, dim_size=num_nodes
-        )  # [n_nodes, irreps]
+
+        message = None
+        if self.fast_tp_config 
+                and self.fast_tp_config["enabled"]
+                and self.fast_tp_config["conv_fusion"]:
+            message = self.conv_tp(node_feats, edge_attrs, tp_weights, sender, receiver)
+        else:
+            mji = self.conv_tp(
+                node_feats[sender], edge_attrs, tp_weights
+            )  # [n_edges, irreps]
+            message = scatter_sum(
+                src=mji, index=receiver, dim=0, dim_size=num_nodes
+            )  # [n_nodes, irreps]
         message = self.linear(message) / self.avg_num_neighbors
         message = message + sc
         return message  # [n_nodes, irreps]
@@ -691,12 +712,19 @@ class RealAgnosticInteractionBlock(InteractionBlock):
         num_nodes = node_feats.shape[0]
         node_feats = self.linear_up(node_feats)
         tp_weights = self.conv_tp_weights(edge_feats)
-        mji = self.conv_tp(
-            node_feats[sender], edge_attrs, tp_weights
-        )  # [n_edges, irreps]
-        message = scatter_sum(
-            src=mji, index=receiver, dim=0, dim_size=num_nodes
-        )  # [n_nodes, irreps]
+
+        message = None
+        if self.fast_tp_config 
+                and self.fast_tp_config["enabled"]
+                and self.fast_tp_config["conv_fusion"]:
+            message = self.conv_tp(node_feats, edge_attrs, tp_weights, sender, receiver)
+        else:
+            mji = self.conv_tp(
+                node_feats[sender], edge_attrs, tp_weights
+            )  # [n_edges, irreps]
+            message = scatter_sum(
+                src=mji, index=receiver, dim=0, dim_size=num_nodes
+            )  # [n_nodes, irreps]
         message = self.linear(message) / self.avg_num_neighbors
         message = self.skip_tp(message, node_attrs)
         return (
@@ -779,12 +807,19 @@ class RealAgnosticResidualInteractionBlock(InteractionBlock):
         sc = self.skip_tp(node_feats, node_attrs)
         node_feats = self.linear_up(node_feats)
         tp_weights = self.conv_tp_weights(edge_feats)
-        mji = self.conv_tp(
-            node_feats[sender], edge_attrs, tp_weights
-        )  # [n_edges, irreps]
-        message = scatter_sum(
-            src=mji, index=receiver, dim=0, dim_size=num_nodes
-        )  # [n_nodes, irreps]
+
+        message = None
+        if self.fast_tp_config 
+                and self.fast_tp_config["enabled"]
+                and self.fast_tp_config["conv_fusion"]:
+            message = self.conv_tp(node_feats, edge_attrs, tp_weights, sender, receiver)
+        else:
+            mji = self.conv_tp(
+                node_feats[sender], edge_attrs, tp_weights
+            )  # [n_edges, irreps]
+            message = scatter_sum(
+                src=mji, index=receiver, dim=0, dim_size=num_nodes
+            )  # [n_nodes, irreps]
         message = self.linear(message) / self.avg_num_neighbors
         return (
             self.reshape(message),
@@ -876,15 +911,22 @@ class RealAgnosticDensityInteractionBlock(InteractionBlock):
         node_feats = self.linear_up(node_feats)
         tp_weights = self.conv_tp_weights(edge_feats)
         edge_density = torch.tanh(self.density_fn(edge_feats) ** 2)
-        mji = self.conv_tp(
-            node_feats[sender], edge_attrs, tp_weights
-        )  # [n_edges, irreps]
         density = scatter_sum(
             src=edge_density, index=receiver, dim=0, dim_size=num_nodes
         )  # [n_nodes, 1]
-        message = scatter_sum(
-            src=mji, index=receiver, dim=0, dim_size=num_nodes
-        )  # [n_nodes, irreps]
+
+        message = None
+        if self.fast_tp_config 
+                and self.fast_tp_config["enabled"]
+                and self.fast_tp_config["conv_fusion"]:
+            message = self.conv_tp(node_feats, edge_attrs, tp_weights, sender, receiver)
+        else:
+            mji = self.conv_tp(
+                node_feats[sender], edge_attrs, tp_weights
+            )  # [n_edges, irreps]
+            message = scatter_sum(
+                src=mji, index=receiver, dim=0, dim_size=num_nodes
+            )  # [n_nodes, irreps]
         message = self.linear(message) / (density + 1)
         message = self.skip_tp(message, node_attrs)
         return (
@@ -979,15 +1021,23 @@ class RealAgnosticDensityResidualInteractionBlock(InteractionBlock):
         node_feats = self.linear_up(node_feats)
         tp_weights = self.conv_tp_weights(edge_feats)
         edge_density = torch.tanh(self.density_fn(edge_feats) ** 2)
-        mji = self.conv_tp(
-            node_feats[sender], edge_attrs, tp_weights
-        )  # [n_edges, irreps]
+
         density = scatter_sum(
             src=edge_density, index=receiver, dim=0, dim_size=num_nodes
         )  # [n_nodes, 1]
-        message = scatter_sum(
-            src=mji, index=receiver, dim=0, dim_size=num_nodes
-        )  # [n_nodes, irreps]
+
+        message = None
+        if self.fast_tp_config 
+                and self.fast_tp_config["enabled"]
+                and self.fast_tp_config["conv_fusion"]:
+            message = self.conv_tp(node_feats, edge_attrs, tp_weights, sender, receiver)
+        else:
+            mji = self.conv_tp(
+                node_feats[sender], edge_attrs, tp_weights
+            )  # [n_edges, irreps]
+            message = scatter_sum(
+                src=mji, index=receiver, dim=0, dim_size=num_nodes
+            )  # [n_nodes, irreps]
         message = self.linear(message) / (density + 1)
         return (
             self.reshape(message),
@@ -1086,12 +1136,19 @@ class RealAgnosticAttResidualInteractionBlock(InteractionBlock):
             dim=-1,
         )
         tp_weights = self.conv_tp_weights(augmented_edge_feats)
-        mji = self.conv_tp(
-            node_feats_up[sender], edge_attrs, tp_weights
-        )  # [n_edges, irreps]
-        message = scatter_sum(
-            src=mji, index=receiver, dim=0, dim_size=num_nodes
-        )  # [n_nodes, irreps]
+
+        message = None
+        if self.fast_tp_config 
+                and self.fast_tp_config["enabled"]
+                and self.fast_tp_config["conv_fusion"]:
+            message = self.conv_tp(node_feats, edge_attrs, tp_weights, sender, receiver)
+        else:
+            mji = self.conv_tp(
+                node_feats_up[sender], edge_attrs, tp_weights
+            )  # [n_edges, irreps]
+            message = scatter_sum(
+                src=mji, index=receiver, dim=0, dim_size=num_nodes
+            )  # [n_nodes, irreps]
         message = self.linear(message) / self.avg_num_neighbors
         return (
             self.reshape(message),
