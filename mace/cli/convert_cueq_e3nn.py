@@ -113,6 +113,8 @@ def transfer_weights(
             if source_dict[key].shape == target_dict[key].shape:
                 logging.debug(f"Transferring additional key: {key}")
                 target_dict[key] = source_dict[key]
+            elif source_dict[key].shape[0] == target_dict[key].shape[1]:
+                target_dict[0, :] = source_dict[key]
             else:
                 logging.warning(
                     f"Shape mismatch for key {key}: "

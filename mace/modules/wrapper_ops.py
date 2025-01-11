@@ -23,7 +23,7 @@ except ImportError:
 
 from build.kernel_wrapper import *
 from src.implementations.LoopUnrollTP import *
-from src.implementations.LoopUnrollConv import *
+from src.implementations.convolution.LoopUnrollConv import *
 from src.implementations.e3nn_lite import * 
 
 if CUET_AVAILABLE:
@@ -108,12 +108,12 @@ class Linear:
                 cue.Irreps(cueq_config.group, irreps_out),
                 layout=cueq_config.layout,
                 shared_weights=shared_weights,
-                optimize_fallback=True,
+                use_fallback=True,
             )
             instance.original_forward = instance.forward
 
             def cuet_forward(self, x: torch.Tensor) -> torch.Tensor:
-                return self.original_forward(x, use_fallback=True)
+                return self.original_forward(x)
 
             instance.forward = types.MethodType(cuet_forward, instance)
             return instance
@@ -155,13 +155,14 @@ class TensorProduct:
                 internal_weights=internal_weights,
                 dtype=torch.get_default_dtype(),
                 math_dtype=torch.get_default_dtype(),
+                use_fallback=True
             )
             instance.original_forward = instance.forward
 
             def cuet_forward(
                 self, x: torch.Tensor, y: torch.Tensor, z: torch.Tensor
             ) -> torch.Tensor:
-                return self.original_forward(x, y, z, use_fallback=None)
+                return self.original_forward(x, y, z)
 
             instance.forward = types.MethodType(cuet_forward, instance)
             return instance
@@ -184,9 +185,14 @@ class TensorProduct:
                 irrep_dtype=irrep_dtype,
                 weight_dtype=weight_dtype)
 
+            print("CONFIG ==================")
+            print(str(irreps_in1))
+            print(str(irreps_in2))
+            print(str(irreps_out))
+
             tp_impl = None
             if fast_tp_config["conv_fusion"]:
-                tp_impl = LoopUnrollConv(tpp, torch_op=True)
+                tp_impl = LoopUnrollConv(tpp, torch_op=True, deterministic=False)
             else: 
                 tp_impl = LoopUnrollTP(tpp, torch_op=True)
 
@@ -228,14 +234,14 @@ class FullyConnectedTensorProduct:
                 layout=cueq_config.layout,
                 shared_weights=shared_weights,
                 internal_weights=internal_weights,
-                optimize_fallback=True,
+                use_fallback=True,
             )
             instance.original_forward = instance.forward
 
             def cuet_forward(
                 self, x: torch.Tensor, attrs: torch.Tensor
             ) -> torch.Tensor:
-                return self.original_forward(x, attrs, use_fallback=True)
+                return self.original_forward(x, attrs)
 
             instance.forward = types.MethodType(cuet_forward, instance)
             return instance
@@ -276,6 +282,7 @@ class SymmetricContractionWrapper:
                 original_mace=True,
                 dtype=torch.get_default_dtype(),
                 math_dtype=torch.get_default_dtype(),
+                use_fallback=None
             )
             instance.original_forward = instance.forward
             instance.layout = cueq_config.layout
@@ -288,8 +295,7 @@ class SymmetricContractionWrapper:
                 index_attrs = torch.nonzero(attrs)[:, 1].int()
                 return self.original_forward(
                     x.flatten(1),
-                    index_attrs,
-                    use_fallback=None,
+                    index_attrs
                 )
 
             instance.forward = types.MethodType(cuet_forward, instance)

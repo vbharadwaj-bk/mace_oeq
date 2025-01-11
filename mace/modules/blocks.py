@@ -445,8 +445,8 @@ class ResidualElementDependentInteractionBlock(InteractionBlock):
         tp_weights = self.conv_tp_weights(node_attrs[sender], edge_feats)
 
         message = None
-        if self.fast_tp_config 
-                and self.fast_tp_config["enabled"]
+        if self.fast_tp_config \
+                and self.fast_tp_config["enabled"] \
                 and self.fast_tp_config["conv_fusion"]:
             message = self.conv_tp(node_feats, edge_attrs, tp_weights, sender, receiver)
         else:
@@ -533,8 +533,8 @@ class AgnosticNonlinearInteractionBlock(InteractionBlock):
         node_feats = self.linear_up(node_feats)
 
         message = None
-        if self.fast_tp_config 
-                and self.fast_tp_config["enabled"]
+        if self.fast_tp_config \
+                and self.fast_tp_config["enabled"] \
                 and self.fast_tp_config["conv_fusion"]:
             message = self.conv_tp(node_feats, edge_attrs, tp_weights, sender, receiver)
         else:
@@ -624,8 +624,8 @@ class AgnosticResidualNonlinearInteractionBlock(InteractionBlock):
         tp_weights = self.conv_tp_weights(edge_feats)
 
         message = None
-        if self.fast_tp_config 
-                and self.fast_tp_config["enabled"]
+        if self.fast_tp_config \
+                and self.fast_tp_config["enabled"] \
                 and self.fast_tp_config["conv_fusion"]:
             message = self.conv_tp(node_feats, edge_attrs, tp_weights, sender, receiver)
         else:
@@ -714,8 +714,8 @@ class RealAgnosticInteractionBlock(InteractionBlock):
         tp_weights = self.conv_tp_weights(edge_feats)
 
         message = None
-        if self.fast_tp_config 
-                and self.fast_tp_config["enabled"]
+        if self.fast_tp_config \
+                and self.fast_tp_config["enabled"] \
                 and self.fast_tp_config["conv_fusion"]:
             message = self.conv_tp(node_feats, edge_attrs, tp_weights, sender, receiver)
         else:
@@ -809,8 +809,8 @@ class RealAgnosticResidualInteractionBlock(InteractionBlock):
         tp_weights = self.conv_tp_weights(edge_feats)
 
         message = None
-        if self.fast_tp_config 
-                and self.fast_tp_config["enabled"]
+        if self.fast_tp_config \
+                and self.fast_tp_config["enabled"] \
                 and self.fast_tp_config["conv_fusion"]:
             message = self.conv_tp(node_feats, edge_attrs, tp_weights, sender, receiver)
         else:
@@ -916,8 +916,8 @@ class RealAgnosticDensityInteractionBlock(InteractionBlock):
         )  # [n_nodes, 1]
 
         message = None
-        if self.fast_tp_config 
-                and self.fast_tp_config["enabled"]
+        if self.fast_tp_config \
+                and self.fast_tp_config["enabled"] \
                 and self.fast_tp_config["conv_fusion"]:
             message = self.conv_tp(node_feats, edge_attrs, tp_weights, sender, receiver)
         else:
@@ -1027,8 +1027,8 @@ class RealAgnosticDensityResidualInteractionBlock(InteractionBlock):
         )  # [n_nodes, 1]
 
         message = None
-        if self.fast_tp_config 
-                and self.fast_tp_config["enabled"]
+        if self.fast_tp_config \
+                and self.fast_tp_config["enabled"] \
                 and self.fast_tp_config["conv_fusion"]:
             message = self.conv_tp(node_feats, edge_attrs, tp_weights, sender, receiver)
         else:
@@ -1138,8 +1138,8 @@ class RealAgnosticAttResidualInteractionBlock(InteractionBlock):
         tp_weights = self.conv_tp_weights(augmented_edge_feats)
 
         message = None
-        if self.fast_tp_config 
-                and self.fast_tp_config["enabled"]
+        if self.fast_tp_config \
+                and self.fast_tp_config["enabled"] \
                 and self.fast_tp_config["conv_fusion"]:
             message = self.conv_tp(node_feats, edge_attrs, tp_weights, sender, receiver)
         else:

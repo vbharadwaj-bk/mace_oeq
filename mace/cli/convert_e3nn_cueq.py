@@ -79,7 +79,10 @@ def transfer_weights(
     transfer_keys = get_transfer_keys()
     for key in transfer_keys:
         if key in source_dict:  # Check if key exists
-            target_dict[key] = source_dict[key]
+            if len(target_dict[key].shape) > 0 and target_dict[key].shape[0] == 1:
+                target_dict[key][:] = source_dict[key]
+            else:
+                target_dict[key] = source_dict[key]
         else:
             logging.warning(f"Key {key} not found in source model")
 
@@ -96,8 +99,10 @@ def transfer_weights(
             if source_dict[key].shape == target_dict[key].shape:
                 logging.debug(f"Transferring additional key: {key}")
                 target_dict[key] = source_dict[key]
+            elif source_dict[key].shape[0] == target_dict[key].shape[1]:
+                target_dict[key][:] = source_dict[key]
             else:
-                logging.warning(
+                print(
                     f"Shape mismatch for key {key}: "
                     f"source {source_dict[key].shape} vs target {target_dict[key].shape}"
                 )

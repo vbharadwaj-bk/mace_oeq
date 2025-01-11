@@ -109,6 +109,17 @@ class AtomicData(torch_geometric.data.Data):
         }
         super().__init__(**data)
 
+        #print("SAVING MOLECULAR GRAPH")
+        #result = {
+        #    'row': edge_index[0].detach().cpu().numpy(),
+        #    'col': edge_index[1].detach().cpu().numpy(),
+        #    'coords': positions.detach().cpu().numpy()
+        #}
+
+        #import pickle
+        #with open(f'data/molecular_structures/carbon_lattice_radius6.0.pickle', 'wb') as handle:
+        #    pickle.dump(result, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
     @classmethod
     def from_config(
         cls,
