@@ -23,7 +23,7 @@ except ImportError:
 
 from build.kernel_wrapper import *
 from src.implementations.LoopUnrollTP import *
-from src.implementations.LoopUnrollConv import *
+from src.implementations.convolution.LoopUnrollConv import *
 from src.implementations.e3nn_lite import * 
 
 if CUET_AVAILABLE:
