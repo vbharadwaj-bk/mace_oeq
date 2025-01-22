@@ -185,8 +185,13 @@ class TensorProduct:
                 weight_dtype=weight_dtype)
 
             tp_impl = None
-            if fast_tp_config["conv_fusion"]:
-                tp_impl = LoopUnrollConv(tpp, torch_op=True)
+            if fast_tp_config["conv_fusion"] is not None:
+                if fast_tp_config["conv_fusion"] == "atomic":
+                    tp_impl = LoopUnrollConv(tpp, torch_op=True, deterministic=False)
+                elif fast_tp_config["conv_fusion"] == "deterministic":
+                    tp_impl = LoopUnrollConv(tpp, torch_op=True, deterministic=True)
+                else:
+                    raise ValueError("Invalid value for conv_fusion argument")
             else: 
                 tp_impl = LoopUnrollTP(tpp, torch_op=True)
 

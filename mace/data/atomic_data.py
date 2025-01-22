@@ -67,7 +67,7 @@ class AtomicData(torch_geometric.data.Data):
         # Check shapes
         num_nodes = node_attrs.shape[0]
 
-        assert edge_index.shape[0] == 2 and len(edge_index.shape) == 2
+        assert edge_index.shape[0] == 3 and len(edge_index.shape) == 2
         assert positions.shape == (num_nodes, 3)
         assert shifts.shape[1] == 3
         assert unit_shifts.shape[1] == 3
@@ -205,6 +205,21 @@ class AtomicData(torch_geometric.data.Data):
             else None
         )
 
+        import numpy as np
+        # Sort the original rows / cols, compute transpose permutation
+        # and append it as the third row of edge_index
+        nnz = edge_index.shape[1]
+        triples = [(edge_index[0, i], edge_index[1, i], i) for i in range(nnz)]
+        triples.sort(key=lambda x: (x[0], x[1]))
+        edge_index[0] = np.array([x[0] for x in triples], dtype=np.int64)
+        edge_index[1] = np.array([x[1] for x in triples], dtype=np.int64)
+
+        triples.sort(key=lambda x: (x[1], x[0]))
+        transpose_perm = np.array([[x[2] for x in triples]], dtype=np.int64)
+        edge_index = np.concatenate((edge_index, transpose_perm))
+
+        print("Sorted input graph and computed transpose permutation.")
+
         return cls(
             edge_index=torch.tensor(edge_index, dtype=torch.long),
             positions=torch.tensor(config.positions, dtype=torch.get_default_dtype()),
@@ -225,7 +240,6 @@ class AtomicData(torch_geometric.data.Data):
             dipole=dipole,
             charges=charges,
         )
-
 
 def get_data_loader(
     dataset: Sequence[AtomicData],

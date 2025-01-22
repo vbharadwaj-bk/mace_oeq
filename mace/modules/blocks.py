@@ -448,7 +448,10 @@ class ResidualElementDependentInteractionBlock(InteractionBlock):
         if self.fast_tp_config \
                 and self.fast_tp_config["enabled"] \
                 and self.fast_tp_config["conv_fusion"]:
-            message = self.conv_tp(node_feats, edge_attrs, tp_weights, sender, receiver)
+            if self.fast_tp_config["conv_fusion"] == "atomic":
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver)
+            else:
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver, edge_index[2])
         else:
             mji = self.conv_tp(
                 node_feats[sender], edge_attrs, tp_weights
@@ -536,7 +539,10 @@ class AgnosticNonlinearInteractionBlock(InteractionBlock):
         if self.fast_tp_config \
                 and self.fast_tp_config["enabled"] \
                 and self.fast_tp_config["conv_fusion"]:
-            message = self.conv_tp(node_feats, edge_attrs, tp_weights, sender, receiver)
+            if self.fast_tp_config["conv_fusion"] == "atomic":
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver)
+            else:
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver, edge_index[2])
         else:
             mji = self.conv_tp(
                 node_feats[sender], edge_attrs, tp_weights
@@ -555,7 +561,7 @@ class AgnosticResidualNonlinearInteractionBlock(InteractionBlock):
         if not hasattr(self, "cueq_config"):
             self.cueq_config = None
 
-        if not hasattr(self, "cueq_config"):
+        if not hasattr(self, "fast_tp_config"):
             self.fast_tp_config = None
 
         # First linear
@@ -627,7 +633,10 @@ class AgnosticResidualNonlinearInteractionBlock(InteractionBlock):
         if self.fast_tp_config \
                 and self.fast_tp_config["enabled"] \
                 and self.fast_tp_config["conv_fusion"]:
-            message = self.conv_tp(node_feats, edge_attrs, tp_weights, sender, receiver)
+            if self.fast_tp_config["conv_fusion"] == "atomic":
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver)
+            else:
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver, edge_index[2])  
         else:
             mji = self.conv_tp(
                 node_feats[sender], edge_attrs, tp_weights
@@ -717,7 +726,10 @@ class RealAgnosticInteractionBlock(InteractionBlock):
         if self.fast_tp_config \
                 and self.fast_tp_config["enabled"] \
                 and self.fast_tp_config["conv_fusion"]:
-            message = self.conv_tp(node_feats, edge_attrs, tp_weights, sender, receiver)
+            if self.fast_tp_config["conv_fusion"] == "atomic":
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver)
+            else:
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver, edge_index[2])
         else:
             mji = self.conv_tp(
                 node_feats[sender], edge_attrs, tp_weights
@@ -812,7 +824,10 @@ class RealAgnosticResidualInteractionBlock(InteractionBlock):
         if self.fast_tp_config \
                 and self.fast_tp_config["enabled"] \
                 and self.fast_tp_config["conv_fusion"]:
-            message = self.conv_tp(node_feats, edge_attrs, tp_weights, sender, receiver)
+            if self.fast_tp_config["conv_fusion"] == "atomic":
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver)
+            else:
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver, edge_index[2])
         else:
             mji = self.conv_tp(
                 node_feats[sender], edge_attrs, tp_weights
@@ -919,7 +934,10 @@ class RealAgnosticDensityInteractionBlock(InteractionBlock):
         if self.fast_tp_config \
                 and self.fast_tp_config["enabled"] \
                 and self.fast_tp_config["conv_fusion"]:
-            message = self.conv_tp(node_feats, edge_attrs, tp_weights, sender, receiver)
+            if self.fast_tp_config["conv_fusion"] == "atomic":
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver)
+            else:
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver, edge_index[2])
         else:
             mji = self.conv_tp(
                 node_feats[sender], edge_attrs, tp_weights
@@ -1030,7 +1048,10 @@ class RealAgnosticDensityResidualInteractionBlock(InteractionBlock):
         if self.fast_tp_config \
                 and self.fast_tp_config["enabled"] \
                 and self.fast_tp_config["conv_fusion"]:
-            message = self.conv_tp(node_feats, edge_attrs, tp_weights, sender, receiver)
+            if self.fast_tp_config["conv_fusion"] == "atomic":
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver)
+            else:
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver, edge_index[2])
         else:
             mji = self.conv_tp(
                 node_feats[sender], edge_attrs, tp_weights
@@ -1141,7 +1162,10 @@ class RealAgnosticAttResidualInteractionBlock(InteractionBlock):
         if self.fast_tp_config \
                 and self.fast_tp_config["enabled"] \
                 and self.fast_tp_config["conv_fusion"]:
-            message = self.conv_tp(node_feats, edge_attrs, tp_weights, sender, receiver)
+            if self.fast_tp_config["conv_fusion"] == "atomic":
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver)
+            else:
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver, edge_index[2])
         else:
             mji = self.conv_tp(
                 node_feats_up[sender], edge_attrs, tp_weights
