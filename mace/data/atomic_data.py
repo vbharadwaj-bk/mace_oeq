@@ -205,19 +205,11 @@ class AtomicData(torch_geometric.data.Data):
             else None
         )
 
-        import numpy as np
-        # Sort the original rows / cols, compute transpose permutation
-        # and append it as the third row of edge_index
-        nnz = edge_index.shape[1]
-        triples = [(edge_index[0, i], edge_index[1, i], i) for i in range(nnz)]
-        triples.sort(key=lambda x: (x[0], x[1]))
-        edge_index[0] = np.array([x[0] for x in triples], dtype=np.int64)
-        edge_index[1] = np.array([x[1] for x in triples], dtype=np.int64)
-
-        triples.sort(key=lambda x: (x[1], x[0]))
-        transpose_perm = np.array([[x[2] for x in triples]], dtype=np.int64)
-        edge_index = np.concatenate((edge_index, transpose_perm))
-
+        from torch_geometric import EdgeIndex as TGEdgeIndex
+        edge_index = TGEdgeIndex(edge_index, device='cuda', dtype=torch.long) 
+        edge_index, _ = edge_index.sort_by("col") # Sort by receiver index for the forward pass 
+        _, transpose_perm = edge_index.sort_by("row") # Sort by sender index 
+        edge_index = torch.cat((edge_index, torch.unsqueeze(transpose_perm, 0)))
         print("Sorted input graph and computed transpose permutation.")
 
         return cls(

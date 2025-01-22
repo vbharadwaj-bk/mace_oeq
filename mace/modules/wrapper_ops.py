@@ -21,10 +21,10 @@ try:
 except ImportError:
     CUET_AVAILABLE = False
 
-from build.kernel_wrapper import *
-from src.implementations.LoopUnrollTP import *
-from src.implementations.convolution.LoopUnrollConv import *
-from src.implementations.e3nn_lite import * 
+from fast_tp.extlib.kernel_wrapper import *
+from fast_tp.implementations.LoopUnrollTP import *
+from fast_tp.implementations.convolution.LoopUnrollConv import *
+from fast_tp.implementations.e3nn_lite import * 
 
 if CUET_AVAILABLE:
     class O3_e3nn(cue.O3):

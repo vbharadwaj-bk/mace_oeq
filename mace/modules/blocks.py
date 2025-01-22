@@ -449,9 +449,9 @@ class ResidualElementDependentInteractionBlock(InteractionBlock):
                 and self.fast_tp_config["enabled"] \
                 and self.fast_tp_config["conv_fusion"]:
             if self.fast_tp_config["conv_fusion"] == "atomic":
-                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver)
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender)
             else:
-                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver, edge_index[2])
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender, edge_index[2])
         else:
             mji = self.conv_tp(
                 node_feats[sender], edge_attrs, tp_weights
@@ -540,9 +540,9 @@ class AgnosticNonlinearInteractionBlock(InteractionBlock):
                 and self.fast_tp_config["enabled"] \
                 and self.fast_tp_config["conv_fusion"]:
             if self.fast_tp_config["conv_fusion"] == "atomic":
-                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver)
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender)
             else:
-                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver, edge_index[2])
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender, edge_index[2])
         else:
             mji = self.conv_tp(
                 node_feats[sender], edge_attrs, tp_weights
@@ -634,9 +634,9 @@ class AgnosticResidualNonlinearInteractionBlock(InteractionBlock):
                 and self.fast_tp_config["enabled"] \
                 and self.fast_tp_config["conv_fusion"]:
             if self.fast_tp_config["conv_fusion"] == "atomic":
-                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver)
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender)
             else:
-                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver, edge_index[2])  
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender, edge_index[2])  
         else:
             mji = self.conv_tp(
                 node_feats[sender], edge_attrs, tp_weights
@@ -727,9 +727,9 @@ class RealAgnosticInteractionBlock(InteractionBlock):
                 and self.fast_tp_config["enabled"] \
                 and self.fast_tp_config["conv_fusion"]:
             if self.fast_tp_config["conv_fusion"] == "atomic":
-                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver)
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender)
             else:
-                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver, edge_index[2])
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender, edge_index[2])
         else:
             mji = self.conv_tp(
                 node_feats[sender], edge_attrs, tp_weights
@@ -825,9 +825,9 @@ class RealAgnosticResidualInteractionBlock(InteractionBlock):
                 and self.fast_tp_config["enabled"] \
                 and self.fast_tp_config["conv_fusion"]:
             if self.fast_tp_config["conv_fusion"] == "atomic":
-                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver)
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender)
             else:
-                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver, edge_index[2])
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender, edge_index[2])
         else:
             mji = self.conv_tp(
                 node_feats[sender], edge_attrs, tp_weights
@@ -935,9 +935,9 @@ class RealAgnosticDensityInteractionBlock(InteractionBlock):
                 and self.fast_tp_config["enabled"] \
                 and self.fast_tp_config["conv_fusion"]:
             if self.fast_tp_config["conv_fusion"] == "atomic":
-                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver)
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender)
             else:
-                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver, edge_index[2])
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender, edge_index[2])
         else:
             mji = self.conv_tp(
                 node_feats[sender], edge_attrs, tp_weights
@@ -1049,9 +1049,9 @@ class RealAgnosticDensityResidualInteractionBlock(InteractionBlock):
                 and self.fast_tp_config["enabled"] \
                 and self.fast_tp_config["conv_fusion"]:
             if self.fast_tp_config["conv_fusion"] == "atomic":
-                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver)
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender)
             else:
-                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver, edge_index[2])
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender, edge_index[2])
         else:
             mji = self.conv_tp(
                 node_feats[sender], edge_attrs, tp_weights
@@ -1163,9 +1163,9 @@ class RealAgnosticAttResidualInteractionBlock(InteractionBlock):
                 and self.fast_tp_config["enabled"] \
                 and self.fast_tp_config["conv_fusion"]:
             if self.fast_tp_config["conv_fusion"] == "atomic":
-                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver)
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender)
             else:
-                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, sender, receiver, edge_index[2])
+                message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender, edge_index[2])
         else:
             mji = self.conv_tp(
                 node_feats_up[sender], edge_attrs, tp_weights
