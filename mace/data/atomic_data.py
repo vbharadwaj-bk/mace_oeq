@@ -205,13 +205,6 @@ class AtomicData(torch_geometric.data.Data):
             else None
         )
 
-        from torch_geometric import EdgeIndex as TGEdgeIndex
-        edge_index = TGEdgeIndex(edge_index, device='cuda', dtype=torch.long) 
-        edge_index, _ = edge_index.sort_by("col") # Sort by receiver index for the forward pass 
-        _, transpose_perm = edge_index.sort_by("row") # Sort by sender index 
-        edge_index = torch.cat((edge_index, torch.unsqueeze(transpose_perm, 0)))
-        print("Sorted input graph and computed transpose permutation.")
-
         return cls(
             edge_index=torch.tensor(edge_index, dtype=torch.long),
             positions=torch.tensor(config.positions, dtype=torch.get_default_dtype()),

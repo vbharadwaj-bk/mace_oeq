@@ -59,8 +59,17 @@ def get_neighborhood(
     # Build output
     edge_index = np.stack((sender, receiver))  # [2, n_edges]
 
+    import torch
+    from torch_geometric import EdgeIndex as TGEdgeIndex
+    edge_index = TGEdgeIndex(edge_index, dtype=torch.long) 
+    edge_index, receiver_perm = edge_index.sort_by("col") # Sort by receiver index for the forward pass 
+    _, transpose_perm = edge_index.sort_by("row") # Sort by sender index 
+    edge_index = torch.cat((edge_index, torch.unsqueeze(transpose_perm, 0)))
+    unit_shifts = unit_shifts[receiver_perm.numpy()]
+    print("Sorted input graph and computed transpose permutation.")
+
     # From the docs: With the shift vector S, the distances D between atoms can be computed from
     # D = positions[j]-positions[i]+S.dot(cell)
     shifts = np.dot(unit_shifts, cell)  # [n_edges, 3]
 
-    return edge_index, shifts, unit_shifts, cell
+    return edge_index.numpy(), shifts, unit_shifts, cell
