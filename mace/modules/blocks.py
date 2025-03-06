@@ -45,7 +45,7 @@ class LinearNodeEmbeddingBlock(torch.nn.Module):
         irreps_in: o3.Irreps,
         irreps_out: o3.Irreps,
         cueq_config: Optional[CuEquivarianceConfig] = None,
-        fast_tp_config: Optional[dict] = None,
+        oeq_config: Optional[dict] = None,
     ):
         super().__init__()
         self.linear = Linear(
@@ -66,7 +66,7 @@ class LinearReadoutBlock(torch.nn.Module):
         irreps_in: o3.Irreps,
         irrep_out: o3.Irreps = o3.Irreps("0e"),
         cueq_config: Optional[CuEquivarianceConfig] = None,
-        fast_tp_config: Optional[dict] = None,
+        oeq_config: Optional[dict] = None,
     ):
         super().__init__()
         self.linear = Linear(
@@ -92,7 +92,7 @@ class NonLinearReadoutBlock(torch.nn.Module):
         irrep_out: o3.Irreps = o3.Irreps("0e"),
         num_heads: int = 1,
         cueq_config: Optional[CuEquivarianceConfig] = None,
-        fast_tp_config: Optional[dict] = None,
+        oeq_config: Optional[dict] = None,
     ):
         super().__init__()
         self.hidden_irreps = MLP_irreps
@@ -122,7 +122,7 @@ class LinearDipoleReadoutBlock(torch.nn.Module):
         irreps_in: o3.Irreps,
         dipole_only: bool = False,
         cueq_config: Optional[CuEquivarianceConfig] = None,
-        fast_tp_config: Optional[dict] = None,
+        oeq_config: Optional[dict] = None,
     ):
         super().__init__()
         if dipole_only:
@@ -146,7 +146,7 @@ class NonLinearDipoleReadoutBlock(torch.nn.Module):
         gate: Callable,
         dipole_only: bool = False,
         cueq_config: Optional[CuEquivarianceConfig] = None,
-        fast_tp_config: Optional[dict] = None,
+        oeq_config: Optional[dict] = None,
     ):
         super().__init__()
         self.hidden_irreps = MLP_irreps
@@ -261,7 +261,7 @@ class EquivariantProductBasisBlock(torch.nn.Module):
         use_sc: bool = True,
         num_elements: Optional[int] = None,
         cueq_config: Optional[CuEquivarianceConfig] = None,
-        fast_tp_config: Optional[dict] = None,
+        oeq_config: Optional[dict] = None,
     ) -> None:
         super().__init__()
 
@@ -307,7 +307,7 @@ class InteractionBlock(torch.nn.Module):
         avg_num_neighbors: float,
         radial_MLP: Optional[List[int]] = None,
         cueq_config: Optional[CuEquivarianceConfig] = None,
-        fast_tp_config: Optional[dict] = None,
+        oeq_config: Optional[dict] = None,
     ) -> None:
         super().__init__()
         self.node_attrs_irreps = node_attrs_irreps
@@ -321,7 +321,7 @@ class InteractionBlock(torch.nn.Module):
             radial_MLP = [64, 64, 64]
         self.radial_MLP = radial_MLP
         self.cueq_config = cueq_config
-        self.fast_tp_config = fast_tp_config
+        self.oeq_config = oeq_config
 
         self._setup()
 
@@ -378,8 +378,8 @@ class ResidualElementDependentInteractionBlock(InteractionBlock):
         if not hasattr(self, "cueq_config"):
             self.cueq_config = None
 
-        if not hasattr(self, "fast_tp_config"):
-            self.fast_tp_config = None
+        if not hasattr(self, "oeq_config"):
+            self.oeq_config = None
 
         # First linear
         self.linear_up = Linear(
@@ -401,7 +401,7 @@ class ResidualElementDependentInteractionBlock(InteractionBlock):
             shared_weights=False,
             internal_weights=False,
             cueq_config=self.cueq_config,
-            fast_tp_config=self.fast_tp_config
+            oeq_config=self.oeq_config
         )
         self.conv_tp_weights = TensorProductWeightsBlock(
             num_elements=self.node_attrs_irreps.num_irreps,
@@ -445,10 +445,10 @@ class ResidualElementDependentInteractionBlock(InteractionBlock):
         tp_weights = self.conv_tp_weights(node_attrs[sender], edge_feats)
 
         message = None
-        if self.fast_tp_config \
-                and self.fast_tp_config["enabled"] \
-                and self.fast_tp_config["conv_fusion"]:
-            if self.fast_tp_config["conv_fusion"] == "atomic":
+        if self.oeq_config \
+                and self.oeq_config["enabled"] \
+                and self.oeq_config["conv_fusion"]:
+            if self.oeq_config["conv_fusion"] == "atomic":
                 message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender)
             else:
                 message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender, edge_index[2])
@@ -469,8 +469,8 @@ class AgnosticNonlinearInteractionBlock(InteractionBlock):
         if not hasattr(self, "cueq_config"):
             self.cueq_config = None
 
-        if not hasattr(self, "fast_tp_config"):
-            self.fast_tp_config = None
+        if not hasattr(self, "oeq_config"):
+            self.oeq_config = None
         
         self.linear_up = Linear(
             self.node_feats_irreps,
@@ -491,7 +491,7 @@ class AgnosticNonlinearInteractionBlock(InteractionBlock):
             shared_weights=False,
             internal_weights=False,
             cueq_config=self.cueq_config,
-            fast_tp_config=self.fast_tp_config
+            oeq_config=self.oeq_config
         )
 
         # Convolution weights
@@ -536,10 +536,10 @@ class AgnosticNonlinearInteractionBlock(InteractionBlock):
         node_feats = self.linear_up(node_feats)
 
         message = None
-        if self.fast_tp_config \
-                and self.fast_tp_config["enabled"] \
-                and self.fast_tp_config["conv_fusion"]:
-            if self.fast_tp_config["conv_fusion"] == "atomic":
+        if self.oeq_config \
+                and self.oeq_config["enabled"] \
+                and self.oeq_config["conv_fusion"]:
+            if self.oeq_config["conv_fusion"] == "atomic":
                 message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender)
             else:
                 message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender, edge_index[2])
@@ -561,8 +561,8 @@ class AgnosticResidualNonlinearInteractionBlock(InteractionBlock):
         if not hasattr(self, "cueq_config"):
             self.cueq_config = None
 
-        if not hasattr(self, "fast_tp_config"):
-            self.fast_tp_config = None
+        if not hasattr(self, "oeq_config"):
+            self.oeq_config = None
 
         # First linear
         self.linear_up = Linear(
@@ -584,7 +584,7 @@ class AgnosticResidualNonlinearInteractionBlock(InteractionBlock):
             shared_weights=False,
             internal_weights=False,
             cueq_config=self.cueq_config,
-            fast_tp_config=self.fast_tp_config
+            oeq_config=self.oeq_config
         )
 
         # Convolution weights
@@ -630,10 +630,10 @@ class AgnosticResidualNonlinearInteractionBlock(InteractionBlock):
         tp_weights = self.conv_tp_weights(edge_feats)
 
         message = None
-        if self.fast_tp_config \
-                and self.fast_tp_config["enabled"] \
-                and self.fast_tp_config["conv_fusion"]:
-            if self.fast_tp_config["conv_fusion"] == "atomic":
+        if self.oeq_config \
+                and self.oeq_config["enabled"] \
+                and self.oeq_config["conv_fusion"]:
+            if self.oeq_config["conv_fusion"] == "atomic":
                 message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender)
             else:
                 message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender, edge_index[2])  
@@ -655,8 +655,8 @@ class RealAgnosticInteractionBlock(InteractionBlock):
         if not hasattr(self, "cueq_config"):
             self.cueq_config = None
 
-        if not hasattr(self, "fast_tp_config"):
-            self.fast_tp_config = None
+        if not hasattr(self, "oeq_config"):
+            self.oeq_config = None
         # First linear
         self.linear_up = Linear(
             self.node_feats_irreps,
@@ -679,7 +679,7 @@ class RealAgnosticInteractionBlock(InteractionBlock):
             shared_weights=False,
             internal_weights=False,
             cueq_config=self.cueq_config,
-            fast_tp_config=self.fast_tp_config
+            oeq_config=self.oeq_config
         )
 
         # Convolution weights
@@ -723,10 +723,10 @@ class RealAgnosticInteractionBlock(InteractionBlock):
         tp_weights = self.conv_tp_weights(edge_feats)
 
         message = None
-        if self.fast_tp_config \
-                and self.fast_tp_config["enabled"] \
-                and self.fast_tp_config["conv_fusion"]:
-            if self.fast_tp_config["conv_fusion"] == "atomic":
+        if self.oeq_config \
+                and self.oeq_config["enabled"] \
+                and self.oeq_config["conv_fusion"]:
+            if self.oeq_config["conv_fusion"] == "atomic":
                 message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender)
             else:
                 message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender, edge_index[2])
@@ -751,8 +751,8 @@ class RealAgnosticResidualInteractionBlock(InteractionBlock):
         if not hasattr(self, "cueq_config"):
             self.cueq_config = None
 
-        if not hasattr(self, "fast_tp_config"):
-            self.fast_tp_config = None
+        if not hasattr(self, "oeq_config"):
+            self.oeq_config = None
 
         # First linear
         self.linear_up = Linear(
@@ -776,7 +776,7 @@ class RealAgnosticResidualInteractionBlock(InteractionBlock):
             shared_weights=False,
             internal_weights=False,
             cueq_config=self.cueq_config,
-            fast_tp_config=self.fast_tp_config
+            oeq_config=self.oeq_config
         )
 
         # Convolution weights
@@ -821,10 +821,10 @@ class RealAgnosticResidualInteractionBlock(InteractionBlock):
         tp_weights = self.conv_tp_weights(edge_feats)
 
         message = None
-        if self.fast_tp_config \
-                and self.fast_tp_config["enabled"] \
-                and self.fast_tp_config["conv_fusion"]:
-            if self.fast_tp_config["conv_fusion"] == "atomic":
+        if self.oeq_config \
+                and self.oeq_config["enabled"] \
+                and self.oeq_config["conv_fusion"]:
+            if self.oeq_config["conv_fusion"] == "atomic":
                 message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender)
             else:
                 message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender, edge_index[2])
@@ -848,8 +848,8 @@ class RealAgnosticDensityInteractionBlock(InteractionBlock):
         if not hasattr(self, "cueq_config"):
             self.cueq_config = None
 
-        if not hasattr(self, "fast_tp_config"):
-            self.fast_tp_config = None
+        if not hasattr(self, "oeq_config"):
+            self.oeq_config = None
 
         # First linear
         self.linear_up = Linear(
@@ -873,7 +873,7 @@ class RealAgnosticDensityInteractionBlock(InteractionBlock):
             shared_weights=False,
             internal_weights=False,
             cueq_config=self.cueq_config,
-            fast_tp_config=self.fast_tp_config
+            oeq_config=self.oeq_config
         )
 
         # Convolution weights
@@ -931,10 +931,10 @@ class RealAgnosticDensityInteractionBlock(InteractionBlock):
         )  # [n_nodes, 1]
 
         message = None
-        if self.fast_tp_config \
-                and self.fast_tp_config["enabled"] \
-                and self.fast_tp_config["conv_fusion"]:
-            if self.fast_tp_config["conv_fusion"] == "atomic":
+        if self.oeq_config \
+                and self.oeq_config["enabled"] \
+                and self.oeq_config["conv_fusion"]:
+            if self.oeq_config["conv_fusion"] == "atomic":
                 message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender)
             else:
                 message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender, edge_index[2])
@@ -959,8 +959,8 @@ class RealAgnosticDensityResidualInteractionBlock(InteractionBlock):
         if not hasattr(self, "cueq_config"):
             self.cueq_config = None
 
-        if not hasattr(self, "fast_tp_config"):
-            self.fast_tp_config = None
+        if not hasattr(self, "oeq_config"):
+            self.oeq_config = None
 
         # First linear
         self.linear_up = Linear(
@@ -984,7 +984,7 @@ class RealAgnosticDensityResidualInteractionBlock(InteractionBlock):
             shared_weights=False,
             internal_weights=False,
             cueq_config=self.cueq_config,
-            fast_tp_config=self.fast_tp_config
+            oeq_config=self.oeq_config
         )
 
         # Convolution weights
@@ -1045,10 +1045,10 @@ class RealAgnosticDensityResidualInteractionBlock(InteractionBlock):
         )  # [n_nodes, 1]
 
         message = None
-        if self.fast_tp_config \
-                and self.fast_tp_config["enabled"] \
-                and self.fast_tp_config["conv_fusion"]:
-            if self.fast_tp_config["conv_fusion"] == "atomic":
+        if self.oeq_config \
+                and self.oeq_config["enabled"] \
+                and self.oeq_config["conv_fusion"]:
+            if self.oeq_config["conv_fusion"] == "atomic":
                 message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender)
             else:
                 message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender, edge_index[2])
@@ -1071,8 +1071,8 @@ class RealAgnosticAttResidualInteractionBlock(InteractionBlock):
     def _setup(self) -> None:
         if not hasattr(self, "cueq_config"):
             self.cueq_config = None
-        if not hasattr(self, "fast_tp_config"):
-            self.fast_tp_config = None
+        if not hasattr(self, "oeq_config"):
+            self.oeq_config = None
 
         self.node_feats_down_irreps = o3.Irreps("64x0e")
         # First linear
@@ -1097,7 +1097,7 @@ class RealAgnosticAttResidualInteractionBlock(InteractionBlock):
             shared_weights=False,
             internal_weights=False,
             cueq_config=self.cueq_config,
-            fast_tp_config=self.fast_tp_config
+            oeq_config=self.oeq_config
         )
 
         # Convolution weights
@@ -1159,10 +1159,10 @@ class RealAgnosticAttResidualInteractionBlock(InteractionBlock):
         tp_weights = self.conv_tp_weights(augmented_edge_feats)
 
         message = None
-        if self.fast_tp_config \
-                and self.fast_tp_config["enabled"] \
-                and self.fast_tp_config["conv_fusion"]:
-            if self.fast_tp_config["conv_fusion"] == "atomic":
+        if self.oeq_config \
+                and self.oeq_config["enabled"] \
+                and self.oeq_config["conv_fusion"]:
+            if self.oeq_config["conv_fusion"] == "atomic":
                 message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender)
             else:
                 message = self.conv_tp.forward(node_feats, edge_attrs, tp_weights, receiver, sender, edge_index[2])

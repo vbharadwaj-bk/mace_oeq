@@ -21,10 +21,10 @@ try:
 except ImportError:
     CUET_AVAILABLE = False
 
-from fast_tp.extlib.kernel_wrapper import *
-from fast_tp.implementations.LoopUnrollTP import *
-from fast_tp.implementations.convolution.LoopUnrollConv import *
-from fast_tp.implementations.e3nn_lite import * 
+import openequivariance as oeq
+from openequivariance.implementations.LoopUnrollTP import *
+from openequivariance.implementations.convolution.LoopUnrollConv import *
+from openequivariance.implementations.e3nn_lite import * 
 
 if CUET_AVAILABLE:
     class O3_e3nn(cue.O3):
@@ -108,12 +108,12 @@ class Linear:
                 cue.Irreps(cueq_config.group, irreps_out),
                 layout=cueq_config.layout,
                 shared_weights=shared_weights,
-                optimize_fallback=True,
+                use_fallback=True
             )
             instance.original_forward = instance.forward
 
             def cuet_forward(self, x: torch.Tensor) -> torch.Tensor:
-                return self.original_forward(x, use_fallback=True)
+                return self.original_forward(x)
 
             instance.forward = types.MethodType(cuet_forward, instance)
             return instance
@@ -138,7 +138,7 @@ class TensorProduct:
         shared_weights: bool = False,
         internal_weights: bool = False,
         cueq_config: Optional[CuEquivarianceConfig] = None,
-        fast_tp_config: Optional[dict] = None,
+        oeq_config: Optional[dict] = None,
     ):
         if (
             CUET_AVAILABLE
@@ -161,13 +161,13 @@ class TensorProduct:
             def cuet_forward(
                 self, x: torch.Tensor, y: torch.Tensor, z: torch.Tensor
             ) -> torch.Tensor:
-                return self.original_forward(x, y, z, use_fallback=None)
+                return self.original_forward(x, y, z)
 
             instance.forward = types.MethodType(cuet_forward, instance)
             return instance
 
 
-        elif fast_tp_config is not None and fast_tp_config["enabled"]:
+        elif oeq_config is not None and oeq_config["enabled"]:
             irrep_dtype = None
             weight_dtype = None
             torch_dtype = torch.get_default_dtype()
@@ -185,10 +185,10 @@ class TensorProduct:
                 weight_dtype=weight_dtype)
 
             tp_impl = None
-            if fast_tp_config["conv_fusion"] is not None:
-                if fast_tp_config["conv_fusion"] == "atomic":
+            if oeq_config["conv_fusion"] is not None:
+                if oeq_config["conv_fusion"] == "atomic":
                     tp_impl = LoopUnrollConv(tpp, torch_op=True, deterministic=False)
-                elif fast_tp_config["conv_fusion"] == "deterministic":
+                elif oeq_config["conv_fusion"] == "deterministic":
                     tp_impl = LoopUnrollConv(tpp, torch_op=True, deterministic=True)
                 else:
                     raise ValueError("Invalid value for conv_fusion argument")
@@ -233,14 +233,14 @@ class FullyConnectedTensorProduct:
                 layout=cueq_config.layout,
                 shared_weights=shared_weights,
                 internal_weights=internal_weights,
-                optimize_fallback=True,
+                use_fallback=False
             )
             instance.original_forward = instance.forward
 
             def cuet_forward(
                 self, x: torch.Tensor, attrs: torch.Tensor
             ) -> torch.Tensor:
-                return self.original_forward(x, attrs, use_fallback=True)
+                return self.original_forward(x, attrs)
 
             instance.forward = types.MethodType(cuet_forward, instance)
             return instance
@@ -293,8 +293,7 @@ class SymmetricContractionWrapper:
                 index_attrs = torch.nonzero(attrs)[:, 1].int()
                 return self.original_forward(
                     x.flatten(1),
-                    index_attrs,
-                    use_fallback=None,
+                    index_attrs
                 )
 
             instance.forward = types.MethodType(cuet_forward, instance)

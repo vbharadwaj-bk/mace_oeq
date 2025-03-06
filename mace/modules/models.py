@@ -63,7 +63,7 @@ class MACE(torch.nn.Module):
         radial_type: Optional[str] = "bessel",
         heads: Optional[List[str]] = None,
         cueq_config: Optional[Dict[str, Any]] = None,
-        fast_tp_config: Optional[Dict[str, Any]] = None
+        oeq_config: Optional[Dict[str, Any]] = None
     ):
         super().__init__()
         self.register_buffer(
@@ -87,7 +87,7 @@ class MACE(torch.nn.Module):
             irreps_in=node_attr_irreps,
             irreps_out=node_feats_irreps,
             cueq_config=cueq_config,
-            fast_tp_config=fast_tp_config
+            oeq_config=oeq_config
         )
         self.radial_embedding = RadialEmbeddingBlock(
             r_max=r_max,
@@ -122,7 +122,7 @@ class MACE(torch.nn.Module):
             avg_num_neighbors=avg_num_neighbors,
             radial_MLP=radial_MLP,
             cueq_config=cueq_config,
-            fast_tp_config=fast_tp_config
+            oeq_config=oeq_config
         )
         self.interactions = torch.nn.ModuleList([inter])
 
@@ -139,14 +139,14 @@ class MACE(torch.nn.Module):
             num_elements=num_elements,
             use_sc=use_sc_first,
             cueq_config=cueq_config,
-            fast_tp_config=fast_tp_config
+            oeq_config=oeq_config
         )
         self.products = torch.nn.ModuleList([prod])
 
         self.readouts = torch.nn.ModuleList()
         self.readouts.append(
             LinearReadoutBlock(
-                hidden_irreps, o3.Irreps(f"{len(heads)}x0e"), cueq_config, fast_tp_config
+                hidden_irreps, o3.Irreps(f"{len(heads)}x0e"), cueq_config, oeq_config
             )
         )
 
@@ -167,7 +167,7 @@ class MACE(torch.nn.Module):
                 avg_num_neighbors=avg_num_neighbors,
                 radial_MLP=radial_MLP,
                 cueq_config=cueq_config,
-                fast_tp_config=fast_tp_config
+                oeq_config=oeq_config
             )
             self.interactions.append(inter)
             prod = EquivariantProductBasisBlock(
@@ -177,7 +177,7 @@ class MACE(torch.nn.Module):
                 num_elements=num_elements,
                 use_sc=True,
                 cueq_config=cueq_config,
-                fast_tp_config=fast_tp_config
+                oeq_config=oeq_config
             )
             self.products.append(prod)
             if i == num_interactions - 2:
@@ -189,13 +189,13 @@ class MACE(torch.nn.Module):
                         o3.Irreps(f"{len(heads)}x0e"),
                         len(heads),
                         cueq_config,
-                        fast_tp_config
+                        oeq_config
                     )
                 )
             else:
                 self.readouts.append(
                     LinearReadoutBlock(
-                        hidden_irreps, o3.Irreps(f"{len(heads)}x0e"), cueq_config, fast_tp_config
+                        hidden_irreps, o3.Irreps(f"{len(heads)}x0e"), cueq_config, oeq_config
                     )
                 )
 
@@ -491,7 +491,7 @@ class BOTNet(torch.nn.Module):
         avg_num_neighbors: float,
         atomic_numbers: List[int],
         cueq_config: Optional[Dict[str, Any]] = None,  # pylint: disable=unused-argument
-        fast_tp_config: Optional[Dict[str, Any]] = None  # pylint: disable=unused-argument
+        oeq_config: Optional[Dict[str, Any]] = None  # pylint: disable=unused-argument
     ):
         super().__init__()
         self.r_max = r_max
@@ -697,7 +697,7 @@ class AtomicDipolesMACE(torch.nn.Module):
         radial_type: Optional[str] = "bessel",
         radial_MLP: Optional[List[int]] = None,
         cueq_config: Optional[Dict[str, Any]] = None,  # pylint: disable=unused-argument
-        fast_tp_config: Optional[Dict[str, Any]] = None  # pylint: disable=unused-argument
+        oeq_config: Optional[Dict[str, Any]] = None  # pylint: disable=unused-argument
     ):
         super().__init__()
         self.register_buffer(
@@ -900,7 +900,7 @@ class EnergyDipolesMACE(torch.nn.Module):
         atomic_energies: Optional[np.ndarray],
         radial_MLP: Optional[List[int]] = None,
         cueq_config: Optional[Dict[str, Any]] = None,  # pylint: disable=unused-argument
-        fast_tp_config: Optional[Dict[str, Any]] = None  # pylint: disable=unused-argument
+        oeq_config: Optional[Dict[str, Any]] = None  # pylint: disable=unused-argument
     ):
         super().__init__()
         self.register_buffer(
