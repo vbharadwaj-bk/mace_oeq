@@ -1,11 +1,21 @@
-# <span style="font-size:larger;">MACE</span>
+# <span style="font-size:larger;">MACE_oeq</span>
 
-[![GitHub release](https://img.shields.io/github/release/ACEsuit/mace.svg)](https://GitHub.com/ACEsuit/mace/releases/)
-[![Paper](https://img.shields.io/badge/Paper-NeurIPs2022-blue)](https://openreview.net/forum?id=YPpSngE-ZU)
-[![License](https://img.shields.io/badge/License-MIT%202.0-blue.svg)](https://opensource.org/licenses/mit)
-[![GitHub issues](https://img.shields.io/github/issues/ACEsuit/mace.svg)](https://GitHub.com/ACEsuit/mace/issues/)
-[![Documentation Status](https://readthedocs.org/projects/mace/badge/)](https://mace-docs.readthedocs.io/en/latest/)
-[![DOI](https://zenodo.org/badge/505964914.svg)](https://doi.org/10.5281/zenodo.14103332)
+MACE_oeq is a fork of the official [MACE](https://github.com/ACEsuit/mace) modified
+to enable acceleration with oeq kernels. This is currently a research artifact (and
+therefore unstable; your feedback is welcome!)
+
+This is an initial release; detailed usage
+instructions to follow.
+
+## Installation
+You'll need to install OpenEquivariance from Github if you'd like to use the 
+accelerated kernels:
+
+```
+pip uninstall mace-torch
+pip install git+https://github.com/PASSIONLab/OpenEquivariance
+pip install git+https://github.com/vbharadwaj-bk/mace_oeq
+```
 
 ## Table of contents
 
