@@ -22,8 +22,8 @@ except ImportError:
     CUET_AVAILABLE = False
 
 import openequivariance as oeq
-from openequivariance.implementations.LoopUnrollTP import *
-from openequivariance.implementations.convolution.LoopUnrollConv import *
+from openequivariance.implementations.TensorProduct import *
+from openequivariance.implementations.convolution.TensorProductConv import *
 from openequivariance.implementations.e3nn_lite import * 
 
 if CUET_AVAILABLE:
@@ -187,13 +187,13 @@ class TensorProduct:
             tp_impl = None
             if oeq_config["conv_fusion"] is not None:
                 if oeq_config["conv_fusion"] == "atomic":
-                    tp_impl = LoopUnrollConv(tpp, torch_op=True, deterministic=False)
+                    tp_impl = TensorProductConv(tpp, torch_op=True, deterministic=False)
                 elif oeq_config["conv_fusion"] == "deterministic":
-                    tp_impl = LoopUnrollConv(tpp, torch_op=True, deterministic=True)
+                    tp_impl = TensorProductConv(tpp, torch_op=True, deterministic=True)
                 else:
                     raise ValueError("Invalid value for conv_fusion argument")
             else: 
-                tp_impl = LoopUnrollTP(tpp, torch_op=True)
+                tp_impl = TensorProduct(tpp, torch_op=True)
 
             tp_impl.weight_numel = tpp.weight_numel
             return tp_impl
@@ -264,6 +264,7 @@ class SymmetricContractionWrapper:
         correlation: int,
         num_elements: Optional[int] = None,
         cueq_config: Optional[CuEquivarianceConfig] = None,
+        oeq_config: Optional[dict] = None
     ):
         if (
             CUET_AVAILABLE
@@ -298,6 +299,13 @@ class SymmetricContractionWrapper:
 
             instance.forward = types.MethodType(cuet_forward, instance)
             return instance
+        elif oeq_config is not None and oeq_config["enabled"]:
+            from openequivariance.implementations.symmetric_contraction.STPOpt import SymmetricContraction as OEQ_STP
+            return OEQ_STP(
+                irreps_in=irreps_in,
+                irreps_out=irreps_out,
+                correlation=correlation,
+                num_elements=num_elements)
 
         return SymmetricContraction(
             irreps_in=irreps_in,
