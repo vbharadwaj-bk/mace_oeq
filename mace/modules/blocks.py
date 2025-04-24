@@ -272,6 +272,7 @@ class EquivariantProductBasisBlock(torch.nn.Module):
             correlation=correlation,
             num_elements=num_elements,
             cueq_config=cueq_config,
+            oeq_config=oeq_config
         )
         # Update linear
         self.linear = Linear(
